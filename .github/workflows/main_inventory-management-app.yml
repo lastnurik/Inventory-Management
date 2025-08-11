@@ -8,14 +8,14 @@ on:
     branches:
       - main
     paths:
-      - 'backend/InventoryManagement.Api/**'
-      - 'backend/InventoryManagement.Application/**'
-      - 'backend/InventoryManagement.Domain/**'
-      - 'backend/InventoryManagement.Infrastructure/**'
+      - 'backend/InventoryManagement/InventoryManagement.Api/**'
+      - 'backend/InventoryManagement/InventoryManagement.Application/**'
+      - 'backend/InventoryManagement/InventoryManagement.Domain/**'
+      - 'backend/InventoryManagement/InventoryManagement.Infrastructure/**'
   workflow_dispatch:
 
 env:
-  BACKEND_API_PATH: 'backend/InventoryManagement.Api' # Define the path for the API project
+  BACKEND_API_PATH: 'backend/InventoryManagement/InventoryManagement.Api' # Define the path for the API project
   DOTNET_VERSION: '8.x'
 
 jobs:
@@ -80,3 +80,4 @@ jobs:
           slot-name: 'Production'
           package: .
           clean: true # Ensures a fresh deployment by deleting existing files
+
