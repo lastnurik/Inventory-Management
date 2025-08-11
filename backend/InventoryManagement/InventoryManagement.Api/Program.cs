@@ -100,10 +100,4 @@ using (var scope = app.Services.CreateScope())
     await DataSeeder.SeedAsync(scope.ServiceProvider);
 }
 
-foreach (var endpoint in app.Services.GetRequiredService<EndpointDataSource>().Endpoints)
-{
-    Console.WriteLine(endpoint.DisplayName);
-}
-
-
 app.Run();
