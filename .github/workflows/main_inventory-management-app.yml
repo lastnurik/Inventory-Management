@@ -7,13 +7,22 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/InventoryManagement.Api/**'
+      - 'backend/InventoryManagement.Application/**'
+      - 'backend/InventoryManagement.Domain/**'
+      - 'backend/InventoryManagement.Infrastructure/**'
   workflow_dispatch:
+
+env:
+  BACKEND_API_PATH: 'backend/InventoryManagement.Api' # Define the path for the API project
+  DOTNET_VERSION: '8.x'
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -21,43 +30,41 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: dotnet clean
-        # This step performs a clean on the project before building to ensure a fresh build.
-        working-directory: 'backend/InventoryManagement.Api'
-        run: dotnet clean
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ${{ env.BACKEND_API_PATH }}
 
       - name: Build with dotnet
-        # The 'working-directory' is updated to point directly to the project folder.
-        working-directory: 'backend/InventoryManagement.Api'
-        run: dotnet build --configuration Release
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ${{ env.BACKEND_API_PATH }}
 
       - name: dotnet publish
-        # The publish command now explicitly specifies the project file to ensure
-        # only the backend is published.
-        working-directory: 'backend/InventoryManagement.Api'
-        run: dotnet publish backend/InventoryManagement.Api/InventoryManagement.Api.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        # This command publishes the project without rebuilding.
+        run: dotnet publish InventoryManagement.Api.csproj -c Release -o "${{github.workspace}}/myapp" --no-build
+        working-directory: ${{ env.BACKEND_API_PATH }}
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ${{github.workspace}}/myapp
 
   deploy:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write # This is required for requesting the JWT
+      contents: read # This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
+          path: .
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -65,11 +72,11 @@ jobs:
           tenant-id: ${{ secrets.__tenantidsecretname__ }}
           subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'inventory-management-app'
           slot-name: 'Production'
           package: .
-          delete-existing-files: true # This line has been added to delete all old files.
+          clean: true # Ensures a fresh deployment by deleting existing files
