@@ -23,11 +23,21 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      - name: dotnet clean
+        # This step performs a clean on the project before building to ensure a fresh build.
+        working-directory: 'backend/InventoryManagement.Api'
+        run: dotnet clean
+
       - name: Build with dotnet
+        # The 'working-directory' is updated to point directly to the project folder.
+        working-directory: 'backend/InventoryManagement.Api'
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        # The publish command now explicitly specifies the project file to ensure
+        # only the backend is published.
+        working-directory: 'backend/InventoryManagement.Api'
+        run: dotnet publish backend/InventoryManagement.Api/InventoryManagement.Api.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -51,9 +61,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B2AB564942A84EA1B07C73B0CE54332A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6397EA05C1FC4164B7F832DE6332B60F }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FE8190F067294411A015B63A0CF9F3A3 }}
+          client-id: ${{ secrets.__clientidsecretname__ }}
+          tenant-id: ${{ secrets.__tenantidsecretname__ }}
+          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -62,4 +72,4 @@ jobs:
           app-name: 'inventory-management-app'
           slot-name: 'Production'
           package: .
-          
+          delete-existing-files: true # This line has been added to delete all old files.
