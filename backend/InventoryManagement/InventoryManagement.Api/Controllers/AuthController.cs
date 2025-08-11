@@ -9,12 +9,10 @@ namespace InventoryManagement.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
 
-        public AuthController(UserManager<AppUser> userManager, RoleManager<IdentityRole<Guid>> roleManager)
+        public AuthController(UserManager<AppUser> userManager)
         {
             _userManager = userManager;
-            _roleManager = roleManager;
         }
 
         public record CustomRegisterRequest(string Email, string Password, string Name);
