@@ -68,9 +68,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.__clientidsecretname__ }}
-          tenant-id: ${{ secrets.__tenantidsecretname__ }}
-          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B2AB564942A84EA1B07C73B0CE54332A }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6397EA05C1FC4164B7F832DE6332B60F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FE8190F067294411A015B63A0CF9F3A3 }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
@@ -80,4 +80,5 @@ jobs:
           slot-name: 'Production'
           package: .
           clean: true # Ensures a fresh deployment by deleting existing files
+
 
