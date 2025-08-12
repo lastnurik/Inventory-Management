@@ -15,16 +15,16 @@ namespace InventoryManagement.Api.Controllers
             _userManager = userManager;
         }
 
-        public record CustomRegisterRequest(string Email, string Password, string Name);
+        public record CustomRegisterRequest(string Name, string Email, string Password);
 
         [HttpPost("register2")]
         public async Task<IActionResult> Register(CustomRegisterRequest request)
         {
             var user = new AppUser
             {
+                Name = request.Name,
                 Email = request.Email,
                 UserName = request.Email,
-                Name = request.Name,
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
