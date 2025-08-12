@@ -31,6 +31,8 @@ jobs:
           app_location: "./frontend/InventoryManagementClient" # App source code path
           api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
+          # We'll use a version that meets your project's requirements, such as 22.
+          app_build_command: "nvm install 22 && npm run build"
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
