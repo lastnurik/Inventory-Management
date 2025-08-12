@@ -31,7 +31,7 @@ jobs:
           app_location: "./frontend/InventoryManagementClient" # App source code path
           api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
-          # This is the new way to specify the Node.js version.
+          # This is the single, clean way to specify the Node.js version.
           node_version: "22.x"
           ###### End of Repository/Build Configurations ######
 
