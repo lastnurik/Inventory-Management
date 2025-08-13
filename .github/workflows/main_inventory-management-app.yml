@@ -1,0 +1,84 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy ASP.Net Core app to Azure Web App - inventory-management-app
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/InventoryManagement/InventoryManagement.Api/**'
+      - 'backend/InventoryManagement/InventoryManagement.Application/**'
+      - 'backend/InventoryManagement/InventoryManagement.Domain/**'
+      - 'backend/InventoryManagement/InventoryManagement.Infrastructure/**'
+  workflow_dispatch:
+
+env:
+  BACKEND_API_PATH: 'backend/InventoryManagement/InventoryManagement.Api' # Define the path for the API project
+  DOTNET_VERSION: '8.x'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read # This is required for actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ${{ env.BACKEND_API_PATH }}
+
+      - name: Build with dotnet
+        run: dotnet build --configuration Release --no-restore
+        working-directory: ${{ env.BACKEND_API_PATH }}
+
+      - name: dotnet publish
+        # This command publishes the project without rebuilding.
+        run: dotnet publish InventoryManagement.Api.csproj -c Release -o "${{github.workspace}}/myapp" --no-build
+        working-directory: ${{ env.BACKEND_API_PATH }}
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{github.workspace}}/myapp
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read # This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+          path: .
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B2AB564942A84EA1B07C73B0CE54332A }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6397EA05C1FC4164B7F832DE6332B60F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FE8190F067294411A015B63A0CF9F3A3 }}
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'inventory-management-app'
+          slot-name: 'Production'
+          package: .
+          clean: true # Ensures a fresh deployment by deleting existing files
+
+
