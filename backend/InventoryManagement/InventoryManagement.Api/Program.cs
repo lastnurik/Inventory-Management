@@ -1,103 +1,91 @@
-using InventoryManagement.Api.DataSeed;
-using InventoryManagement.Domain;
+using InventoryManagement.Api.Handlers;
+using InventoryManagement.Application.Interfaces;
+using InventoryManagement.Application.Services;
+using InventoryManagement.Domain.Entities;
+using InventoryManagement.Infrastructure.Options;
 using InventoryManagement.Infrastructure.Persistance;
-using Microsoft.AspNetCore.Authorization;
+using InventoryManagement.Infrastructure.Processors;
+using InventoryManagement.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi();
+
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(JwtOptions.JwtOptionsKey));
+
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(opt =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+    opt.Password.RequireDigit = true;
+    opt.Password.RequireLowercase = true;
+    opt.Password.RequireNonAlphanumeric = true;
+    opt.Password.RequireUppercase = true;
+    opt.Password.RequiredLength = 8;
+    opt.User.RequireUniqueEmail = true;
+}).AddEntityFrameworkStores<AppDbContext>();
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your token.\nExample: Bearer 12345abcdef"
-    });
+builder.Services.AddDbContext<AppDbContext>(opt =>
+{
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
+});
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+builder.Services.AddScoped<IAuthTokenProcessor, AuthTokenProcessor>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+
+builder.Services.AddAuthentication(opt =>
+{
+    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    var jwtOptions = builder.Configuration.GetSection(JwtOptions.JwtOptionsKey)
+        .Get<JwtOptions>() ?? throw new ArgumentException(nameof(JwtOptions));
+
+    options.TokenValidationParameters = new TokenValidationParameters
     {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtOptions.Issuer,
+        ValidAudience = jwtOptions.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
+            context.Token = context.Request.Cookies["ACCESS_TOKEN"];
+            return Task.CompletedTask;
         }
-    });
+    };
 });
 
-builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
-{
-    options.Password.RequireDigit = false;
-    options.Password.RequiredLength = 1;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequiredUniqueChars = 0;
+builder.Services.AddAuthorization();
 
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 100;
-    options.Lockout.AllowedForNewUsers = true;
-
-    options.User.RequireUniqueEmail = true;
-
-    options.ClaimsIdentity.UserIdClaimType = "id";
-    options.ClaimsIdentity.EmailClaimType = "email";
-    options.ClaimsIdentity.RoleClaimType = "roles";
-})
-.AddEntityFrameworkStores<AppDbContext>()
-.AddClaimsPrincipalFactory<AppUserClaimsPrincipalFactory>()
-.AddApiEndpoints()
-.AddDefaultTokenProviders();
-
-builder.Services.AddAuthentication()
-    .AddBearerToken(IdentityConstants.BearerScheme);
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddAuthorization(options =>
-{
-    var policy = new AuthorizationPolicyBuilder(IdentityConstants.ApplicationScheme, IdentityConstants.BearerScheme)
-        .RequireAuthenticatedUser()
-        .Build();
-
-    options.DefaultPolicy = policy;
-});
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference(opt =>
+    {
+        opt.WithTitle("JWT + Refresh Token Auth API");
+    });
 }
 
+app.UseExceptionHandler(_ => { });
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.MapControllers();
-app.MapIdentityApi<AppUser>();
-
-using (var scope = app.Services.CreateScope())
-{
-    await DataSeeder.SeedAsync(scope.ServiceProvider);
-}
-
-app.Run();
