@@ -1,5 +1,4 @@
 ﻿using InventoryManagement.Domain.Entities;
-using InventoryManagement.Domain.Interfaces;
 using InventoryManagement.Infrastructure.Options;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;

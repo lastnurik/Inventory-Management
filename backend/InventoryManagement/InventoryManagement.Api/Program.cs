@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +32,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(opt =>
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString"));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 builder.Services.AddScoped<IAuthTokenProcessor, AuthTokenProcessor>();
@@ -84,6 +85,12 @@ if (app.Environment.IsDevelopment())
         opt.WithTitle("JWT + Refresh Token Auth API");
     });
 }
+
+app.MapOpenApi();
+app.MapScalarApiReference(opt =>
+{
+    opt.WithTitle("JWT + Refresh Token Auth API");
+});
 
 app.UseExceptionHandler(_ => { });
 app.UseHttpsRedirection();
