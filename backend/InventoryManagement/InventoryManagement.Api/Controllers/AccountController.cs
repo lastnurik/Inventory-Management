@@ -1,7 +1,12 @@
 ﻿using InventoryManagement.Application.Interfaces;
 using InventoryManagement.Domain.Requests;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
+using InventoryManagement.Domain.Entities;
 
 namespace InventoryManagement.Api.Controllers
 {
@@ -10,10 +15,14 @@ namespace InventoryManagement.Api.Controllers
     public class AccountController : ControllerBase
     {
         private readonly IAccountService _accountService;
+        private readonly SignInManager<User> _signInManager;
+        private readonly LinkGenerator _linkGenerator;
 
-        public AccountController(IAccountService accountService)
+        public AccountController(IAccountService accountService, SignInManager<User> signInManager, LinkGenerator linkGenerator)
         {
-           _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
+            _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
+            _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
+            _linkGenerator = linkGenerator ?? throw new ArgumentNullException(nameof(linkGenerator));
         }
 
         [HttpPost("register")]
@@ -53,8 +62,32 @@ namespace InventoryManagement.Api.Controllers
             }
 
             await _accountService.RefreshTokenAsync(refreshToken);
-
             return Ok();
+        }
+
+        [HttpGet("login/google")]
+        public IActionResult LoginWithGoogle([FromQuery] string returnUrl)
+        {
+            var callbackUrl = _linkGenerator.GetPathByName(HttpContext, "GoogleLoginCallback") + $"?returnUrl={returnUrl}";
+
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", callbackUrl);
+
+            return Challenge(properties, new[] { "Google" });
+        }
+
+        [HttpGet("login/google/callback", Name = "GoogleLoginCallback")]
+        public async Task<IActionResult> GoogleLoginCallback([FromQuery] string returnUrl)
+        {
+            var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+            if (!result.Succeeded)
+            {
+                return Unauthorized();
+            }
+
+            await _accountService.LoginWithGoogleAsync(result.Principal);
+
+            return Redirect(returnUrl);
         }
     }
 }
