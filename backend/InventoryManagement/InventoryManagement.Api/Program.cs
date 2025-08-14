@@ -15,6 +15,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+
 builder.Services.AddOpenApi();
 
 builder.Services.Configure<JwtOptions>(
@@ -86,13 +88,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.MapOpenApi();
-app.MapScalarApiReference(opt =>
-{
-    opt.WithTitle("JWT + Refresh Token Auth API");
-});
-
 app.UseExceptionHandler(_ => { });
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
