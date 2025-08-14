@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", options =>
     {
-        options.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://jolly-dune-03325f203.2.azurestaticapps.net/");
+        options.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://jolly-dune-03325f203.2.azurestaticapps.net", "http://localhost:5173");
     });
 });
 
