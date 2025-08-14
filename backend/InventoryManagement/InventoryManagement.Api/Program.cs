@@ -28,7 +28,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", options =>
     {
-        options.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://jolly-dune-03325f203.2.azurestaticapps.net", "http://localhost:5173");
+        options.AllowAnyHeader().AllowAnyMethod().WithOrigins(
+            "https://jolly-dune-03325f203.2.azurestaticapps.net",
+            "http://localhost:5173",
+            "https://inventory-management-app-gvaphyaufbfsa3d0.germanywestcentral-01.azurewebsites.net"
+        );
     });
 });
 
