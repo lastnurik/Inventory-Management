@@ -12,5 +12,7 @@ namespace InventoryManagement.Application.Interfaces
         Task RefreshTokenAsync(string? refreshToken);
 
         Task LoginWithGoogleAsync(ClaimsPrincipal? claimsPrincipal);
+
+        public void Logout();
     }
 }

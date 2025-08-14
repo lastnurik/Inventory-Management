@@ -57,6 +57,11 @@ namespace InventoryManagement.Application.Services
                 throw new LoginFailedException(loginRequest.Email);
             }
 
+            if (user.IsBlocked)
+            {
+                throw new UserHasBeenBlockedException();
+            }
+
             var userRoles = await _userManager.GetRolesAsync(user);
             var (jwtToken, expirationDateInUtc) = _authTokenProcessor.GenerateJwtToken(user, userRoles);
             var refreshTokenValue = _authTokenProcessor.GenerateRefreshToken();
@@ -89,6 +94,11 @@ namespace InventoryManagement.Application.Services
             if (user.RefreshTokenExpiresAtUtc < DateTime.UtcNow)
             {
                 throw new RefreshTokenException("Refresh token is expired.");
+            }
+
+            if (user.IsBlocked)
+            {
+                throw new UserHasBeenBlockedException();
             }
 
             var userRoles = await _userManager.GetRolesAsync(user);
@@ -147,6 +157,11 @@ namespace InventoryManagement.Application.Services
                 user = newUser;
             }
 
+            if (user.IsBlocked)
+            {
+                throw new UserHasBeenBlockedException();
+            }
+
             var info = new UserLoginInfo("Google",
             claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty,
             "Google");
@@ -173,6 +188,12 @@ namespace InventoryManagement.Application.Services
 
             _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("ACCESS_TOKEN", jwtToken, expirationDateInUtc);
             _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("REFRESH_TOKEN", user.RefreshToken, refreshTokenExpirationDateInUtc);
+        }
+
+        public void Logout()
+        {
+            _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("ACCESS_TOKEN", string.Empty, DateTime.UtcNow.AddDays(-1));
+            _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("REFRESH_TOKEN", string.Empty, DateTime.UtcNow.AddDays(-1));
         }
     }
 }

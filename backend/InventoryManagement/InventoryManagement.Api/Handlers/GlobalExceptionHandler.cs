@@ -33,6 +33,7 @@ namespace InventoryManagement.Api.Handlers
                 UserAlreadyExistsException => (HttpStatusCode.Conflict, exception.Message),
                 RegistrationFailedException => (HttpStatusCode.BadRequest, exception.Message),
                 RefreshTokenException => (HttpStatusCode.Unauthorized, exception.Message),
+                UserHasBeenBlockedException => (HttpStatusCode.Unauthorized, exception.Message),
                 _ => (HttpStatusCode.InternalServerError, $"An unexpected error occurred: {exception.Message}")
             };
         }

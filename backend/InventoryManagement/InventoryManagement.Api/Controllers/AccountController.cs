@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using InventoryManagement.Domain.Entities;
+using System.Security.Claims;
 
 namespace InventoryManagement.Api.Controllers
 {
@@ -48,6 +49,38 @@ namespace InventoryManagement.Api.Controllers
 
             await _accountService.LoginAsync(loginRequest);
 
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult Me()
+        {
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var firstName = User.FindFirstValue("firstName");
+            var lastName = User.FindFirst("lastName")?.Value;
+            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            var isBlocked = User.FindFirstValue("isBlocked");
+
+            if (bool.TryParse(isBlocked, out var isBlockedBool) && isBlockedBool)
+            {
+                return Unauthorized();
+            }
+
+            return Ok(new
+            {
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName,
+                Roles = roles
+            });
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            _accountService.Logout();
             return Ok();
         }
 
