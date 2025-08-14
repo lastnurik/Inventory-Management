@@ -43,6 +43,8 @@ namespace InventoryManagement.Application.Services
             {
                 throw new RegistrationFailedException(result.Errors.Select(x => x.Description));
             }
+
+            await _userManager.AddToRoleAsync(user, "User");
         }
 
         public async Task LoginAsync(LoginRequest loginRequest)
@@ -54,7 +56,8 @@ namespace InventoryManagement.Application.Services
                 throw new LoginFailedException(loginRequest.Email);
             }
 
-            var (jwtToken, expirationDateInUtc) = _authTokenProcessor.GenerateJwtToken(user);
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var (jwtToken, expirationDateInUtc) = _authTokenProcessor.GenerateJwtToken(user, userRoles);
             var refreshTokenValue = _authTokenProcessor.GenerateRefreshToken();
 
             var refreshTokenExpirationDateInUtc = DateTime.UtcNow.AddDays(7);
@@ -87,7 +90,8 @@ namespace InventoryManagement.Application.Services
                 throw new RefreshTokenException("Refresh token is expired.");
             }
 
-            var (jwtToken, expirationDateInUtc) = _authTokenProcessor.GenerateJwtToken(user);
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var (jwtToken, expirationDateInUtc) = _authTokenProcessor.GenerateJwtToken(user, userRoles);
             var refreshTokenValue = _authTokenProcessor.GenerateRefreshToken();
 
             var refreshTokenExpirationDateInUtc = DateTime.UtcNow.AddDays(7);

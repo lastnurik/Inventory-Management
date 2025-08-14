@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
+using InventoryManagement.Infrastructure.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,11 +25,11 @@ builder.Services.Configure<JwtOptions>(
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(opt =>
 {
-    opt.Password.RequireDigit = true;
-    opt.Password.RequireLowercase = true;
-    opt.Password.RequireNonAlphanumeric = true;
-    opt.Password.RequireUppercase = true;
-    opt.Password.RequiredLength = 8;
+    opt.Password.RequireDigit = false;
+    opt.Password.RequireLowercase = false;
+    opt.Password.RequireNonAlphanumeric = false;
+    opt.Password.RequireUppercase = false;
+    opt.Password.RequiredLength = 1;
     opt.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<AppDbContext>();
 
@@ -78,6 +79,8 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+
+await app.SeedDatabaseAsync();
 
 if (app.Environment.IsDevelopment())
 {

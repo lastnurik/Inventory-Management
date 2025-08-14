@@ -26,7 +26,7 @@ namespace InventoryManagement.Infrastructure.Processors
             _jwtOptions = jwtOptions.Value;
         }
 
-        public (string jwtToken, DateTime expiresAtUtc) GenerateJwtToken(User user)
+        public (string jwtToken, DateTime expiresAtUtc) GenerateJwtToken(User user, IList<string> roles)
         {
             var signingKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_jwtOptions.Secret));
@@ -35,13 +35,16 @@ namespace InventoryManagement.Infrastructure.Processors
                 signingKey,
                 SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.NameIdentifier, user.ToString())
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.ToString()),
+                new Claim("isBlocked", user.IsBlocked.ToString())
+            };
+
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationTimeInMinutes);
 
