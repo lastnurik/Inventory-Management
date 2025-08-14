@@ -24,6 +24,14 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.JwtOptionsKey));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", options =>
+    {
+        options.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://jolly-dune-03325f203.2.azurestaticapps.net/");
+    });
+});
+
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(opt =>
 {
     opt.Password.RequireDigit = false;
@@ -110,6 +118,8 @@ if (app.Environment.IsDevelopment())
         opt.WithTitle("Inventory Management Service API");
     });
 }
+
+app.UseCors("CorsPolicy");
 
 app.UseExceptionHandler(_ => { });
 app.UseHttpsRedirection();
