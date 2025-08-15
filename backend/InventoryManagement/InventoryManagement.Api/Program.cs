@@ -26,13 +26,16 @@ builder.Services.Configure<JwtOptions>(
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy", options =>
+    options.AddPolicy("CorsPolicy", builder =>
     {
-        options.AllowAnyHeader().AllowAnyMethod().WithOrigins(
+        builder.WithOrigins(
             "https://jolly-dune-03325f203.2.azurestaticapps.net",
             "http://localhost:5173",
             "https://inventory-management-app-gvaphyaufbfsa3d0.germanywestcentral-01.azurewebsites.net"
-        );
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
