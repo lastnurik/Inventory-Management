@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const backendUrl = 'https://localhost:7255';
+  const backendUrl = 'https://inventory-management-app-gvaphyaufbfsa3d0.germanywestcentral-01.azurewebsites.net';
 
   useEffect(() => {
     checkAuthStatus();
