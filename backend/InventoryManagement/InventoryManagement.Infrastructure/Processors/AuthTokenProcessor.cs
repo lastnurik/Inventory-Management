@@ -72,14 +72,17 @@ namespace InventoryManagement.Infrastructure.Processors
         public void WriteAuthTokenAsHttpOnlyCookie(string cookieName, string token,
             DateTime expiration)
         {
+            var request = _httpContextAccessor.HttpContext.Request;
+            var isLocalhost = request.Host.Host.Contains("localhost");
+
             _httpContextAccessor.HttpContext.Response.Cookies.Append(cookieName,
                 token, new CookieOptions
                 {
                     HttpOnly = true,
                     Expires = expiration,
                     IsEssential = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict
+                    Secure = !isLocalhost, // Use HTTP for localhost
+                    SameSite = isLocalhost ? SameSiteMode.Lax : SameSiteMode.None
                 });
         }
     }

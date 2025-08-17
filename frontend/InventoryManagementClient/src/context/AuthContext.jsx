@@ -1,163 +1,131 @@
-import React, { createContext, useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-    const navigate = useNavigate();
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
-    const API_URL = "https://inventory-management-app-gvaphyaufbfsa3d0.germanywestcentral-01.azurewebsites.net/api/account";
+  const backendUrl = 'https://localhost:7255';
 
-    // Wrapper for all authenticated fetch calls
-    const fetchWithAuth = async (url, options = {}) => {
-        const res = await fetch(url, {
-            credentials: "include",
-            ...options
-        });
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
-        if (res.status === 401) {
-            setUser(null);
-            navigate("/login", { replace: true });
-            throw new Error("Unauthorized - redirecting to login");
-        }
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch(backendUrl + '/api/account/me', {
+        credentials: 'include'
+      });
 
-        return res;
-    };
+      if (response.status === 401) {
+      return await refreshToken();
+    }
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleApiError = async (res) => {
-        if (!res.ok) {
-            let message = "Unknown error occurred";
-            try {
-                const data = await res.json();
-                message = data.message || message;
-            } catch {
-                message = res.statusText;
-            }
-            throw new Error(message);
-        }
-    };
-
-    const login = useCallback(async (email, password) => {
-        try {
-            setError(null);
-            const res = await fetch(`${API_URL}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ email, password })
-            });
-            await handleApiError(res);
-            await fetchUser();
-            setSuccess("Logged in successfully!");
-        } catch (err) {
-            setError(err.message);
-        }
-    }, []);
-
-    const register = useCallback(async (firstName, lastName, email, password) => {
-        try {
-            setError(null);
-            const res = await fetch(`${API_URL}/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ firstName, lastName, email, password })
-            });
-            await handleApiError(res);
-            await fetchUser();
-            setSuccess("Account created successfully!");
-        } catch (err) {
-            setError(err.message);
-        }
-    }, []);
-
-    const logout = useCallback(async () => {
-        try {
-            await fetch(`${API_URL}/logout`, {
-                method: "POST",
-                credentials: "include"
-            });
-        } catch {}
-        setUser(null);
-        navigate("/login", { replace: true });
-    }, []);
-
-    const signInWithGoogle = useCallback(() => {
-        const returnUrl = encodeURIComponent(window.location.origin);
-        window.location.href = `${API_URL}/login/google?returnUrl=${returnUrl}`;
-    }, []);
-
-    const fetchUser = useCallback(async () => {
-        try {
-            const res = await fetchWithAuth(`${API_URL}/me`);
-            if (res.ok) {
-                const data = await res.json();
-                setUser(data);
-            } else {
-                setUser(null);
-            }
-        } catch {
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const refreshToken = useCallback(async () => {
-        try {
-            await fetchWithAuth(`${API_URL}/refresh`, { method: "POST" });
-            await fetchUser();
-        } catch (err) {
-            console.error("Failed to refresh token:", err);
-            setUser(null);
-        }
-    }, [fetchUser]);
-
-    useEffect(() => {
-        fetchUser();
-    }, [fetchUser]);
-
-    // Auto refresh every 14 minutes
-    useEffect(() => {
-        const interval = setInterval(() => {
-            refreshToken();
-        }, 14 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [refreshToken]);
-
-    return (
-        <AuthContext.Provider value={{
-            user,
-            loading,
-            error,
-            success,
-            login,
-            register,
-            logout,
-            signInWithGoogle
-        }}>
-            {/* Alerts */}
-            {error && (
-                <Alert variant="destructive" className="mb-4">
-                    <AlertCircleIcon />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-            {success && (
-                <Alert className="mb-4">
-                    <CheckCircle2Icon />
-                    <AlertTitle>Success</AlertTitle>
-                    <AlertDescription>{success}</AlertDescription>
-                </Alert>
-            )}
-            {children}
-        </AuthContext.Provider>
-    );
+  const refreshToken = async () => {
+  try {
+    const response = await fetch('/api/account/refresh', {
+      method: 'POST',
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      return await checkAuthStatus();
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    return false;
+  }
 };
+
+  const login = async (email, password) => {
+    try {
+      const response = await fetch(backendUrl + '/api/account/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+      const cookies = response.headers.get('set-cookie');
+      if (cookies) {
+        cookies.split(',').forEach(cookie => {
+          document.cookie = cookie;
+        });
+      }
+    }
+      await checkAuthStatus();
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await fetch(backendUrl + '/api/account/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      await login(userData.email, userData.password);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch(backendUrl + '/api/account/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setUser(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const value = {
+    user,
+    isLoading,
+    login,
+    register,
+    logout
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export const useAuth = () => useContext(AuthContext);
