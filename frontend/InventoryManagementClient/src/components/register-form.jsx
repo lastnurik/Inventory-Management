@@ -10,7 +10,53 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
 export function RegisterForm({ className, ...props }) {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+  const { user, isLoading, register } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/');
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Show loading state
+  }
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      await register(formData);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -54,23 +100,23 @@ export function RegisterForm({ className, ...props }) {
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" type="text" placeholder="John" required />
+                  <Input id="firstName" type="text" placeholder="John" required value={formData.firstName} onChange={handleChange}/>
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" type="text" placeholder="Doe" required />
+                  <Input id="lastName" type="text" placeholder="Doe" required value={formData.lastName} onChange={handleChange} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="m@example.com" required />
+                  <Input id="email" type="email" placeholder="m@example.com" required  value={formData.email} onChange={handleChange}/>
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required />
+                  <Input id="password" type="password" required value={formData.password} onChange={handleChange} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input id="confirmPassword" type="password" required />
+                  <Input id="confirmPassword" type="password" required value={formData.confirmPassword} onChange={handleChange}/>
                 </div>
                 <Button type="submit" className="w-full">
                   Register

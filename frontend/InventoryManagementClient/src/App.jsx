@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import MainPage from './pages/MainPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
         <Route path="/home" element={<MainPage />} />
       </Route>
       
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFoundPage/>} />
     </Routes>
   );
 }
